@@ -10,7 +10,7 @@ import (
 type MyMem struct {
 	Log     []models.LogPayload
 	Mu      sync.RWMutex
-	Trigger chan struct{}
+	Trigger chan []models.LogPayload
 	Exit    chan os.Signal
 	Logger  *zap.Logger
 	config  *MemConfig
@@ -27,7 +27,7 @@ type MemConfig struct {
 func NewCache(log *zap.Logger, postEndpoint string, batchInterval, batchSize, retry, retryInterval int) *MyMem {
 	return &MyMem{
 		Log:     make([]models.LogPayload, 0),
-		Trigger: make(chan struct{}),
+		Trigger: make(chan []models.LogPayload),
 		Exit:    make(chan os.Signal, 1),
 		config: &MemConfig{
 			BatchInterval: batchInterval,
@@ -43,28 +43,9 @@ func NewCache(log *zap.Logger, postEndpoint string, batchInterval, batchSize, re
 func (m *MyMem) Put(payload models.LogPayload) {
 	m.Mu.Lock()
 	defer m.Mu.Unlock()
-
 	m.Log = append(m.Log, payload)
-
 	if len(m.Log) >= m.config.BatchSize {
-		m.SetTrigger()
+		m.Trigger <- m.Log
+		m.Log = m.Log[m.config.BatchSize:]
 	}
-}
-
-func (m *MyMem) GetAll() []models.LogPayload {
-	m.Mu.RLock()
-	defer m.Mu.RUnlock()
-
-	return m.Log
-}
-
-func (m *MyMem) Purge() {
-	m.Mu.Lock()
-	defer m.Mu.Unlock()
-
-	m.Log = nil // Use nil slice instead of creating a new one
-}
-
-func (m *MyMem) SetTrigger() {
-	m.Trigger <- struct{}{}
 }

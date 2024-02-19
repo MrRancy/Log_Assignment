@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"encoding/json"
+	"mrrancy/logAssignment/models"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,12 +15,12 @@ const (
 	contentTypeJSON = "application/json"
 )
 
-func (m *MyMem) TransportLogs() bool {
+func (m *MyMem) TransportLogs(batch []models.LogPayload) bool {
 	startTime := time.Now()
 
 	// Encode logs to JSON
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(m.Log); err != nil {
+	if err := json.NewEncoder(&buf).Encode(batch); err != nil {
 		m.Logger.Error("Error encoding logs to JSON", zap.Error(err))
 		return false
 	}
@@ -44,7 +45,7 @@ func (m *MyMem) TransportLogs() bool {
 	if resp != nil {
 		status = resp.StatusCode
 	}
-	m.Logger.Info("Batch Size", zap.String("size", strconv.Itoa(m.config.BatchSize)), zap.Int("Status Code", status), zap.Duration("Duration", duration))
+	m.Logger.Info("Batch Size", zap.String("size", strconv.Itoa(len(batch))), zap.Int("Status Code", status), zap.Duration("Duration", duration))
 
 	// Check for errors after making the HTTP request
 	if err != nil {

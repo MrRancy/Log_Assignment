@@ -9,8 +9,8 @@ import (
 )
 
 type LogHandlerResponse struct {
-	Message string              `json:"message"`
-	Data    []models.LogPayload `json:"data"`
+	Message string `json:"message"`
+	Status  bool   `json:"status"`
 }
 
 type Controller struct {
@@ -36,12 +36,11 @@ func (h *Controller) LogHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON payload"})
 		return
 	}
-
 	h.Cache.Put(payload)
 
 	response := LogHandlerResponse{
 		Message: "Log payload received successfully",
-		Data:    h.Cache.GetAll(),
+		Status:  true,
 	}
 
 	c.JSON(http.StatusOK, response)
